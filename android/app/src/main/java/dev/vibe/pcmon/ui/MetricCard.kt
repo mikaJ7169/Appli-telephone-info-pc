@@ -1,7 +1,6 @@
 package dev.vibe.pcmon.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,12 +8,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import dev.vibe.pcmon.theme.PcmonBorder
 import dev.vibe.pcmon.theme.PcmonDim
 import dev.vibe.pcmon.theme.PcmonPanel
 import dev.vibe.pcmon.theme.PcmonWhite
@@ -31,22 +32,23 @@ fun MetricCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .border(1.dp, PcmonBorder)
+                .clip(RoundedCornerShape(18.dp))
                 .background(PcmonPanel)
-                .padding(10.dp),
+                .padding(14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, style = MaterialTheme.typography.labelSmall, color = PcmonDim)
-            Text(value, style = MaterialTheme.typography.labelMedium, color = PcmonWhite)
+            Text(title, style = MaterialTheme.typography.labelLarge, color = PcmonDim)
+            Text(value, style = MaterialTheme.typography.titleLarge, color = PcmonWhite)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         chart()
         if (sub != null) {
-            Spacer(Modifier.height(6.dp))
-            Text(sub, style = MaterialTheme.typography.labelSmall, color = PcmonDim)
+            Spacer(Modifier.height(8.dp))
+            Text(sub, style = MaterialTheme.typography.bodySmall, color = PcmonDim)
         }
     }
 }

@@ -15,6 +15,7 @@ class SseClient {
 
     fun start(
         baseUrl: String,
+        autoReconnect: Boolean = true,
         onOpen: () -> Unit,
         onEvent: (String) -> Unit,
         onError: (Throwable) -> Unit,
@@ -45,6 +46,7 @@ class SseClient {
                     } catch (e: Exception) {
                         if (isActive) {
                             onError(e)
+                            if (!autoReconnect) return@launch
                             delay(3000)
                         }
                     }

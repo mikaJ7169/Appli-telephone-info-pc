@@ -1,8 +1,8 @@
 package dev.vibe.pcmon.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,19 +11,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.vibe.pcmon.data.Metrics
-import dev.vibe.pcmon.theme.PcmonBorder
 import dev.vibe.pcmon.theme.PcmonDim
 import dev.vibe.pcmon.theme.PcmonMid
 import dev.vibe.pcmon.theme.PcmonPanel
@@ -38,151 +41,157 @@ fun DashboardScreen(
 ) {
     val metrics by vm.metrics.collectAsState()
     val m = metrics
-    LazyVerticalGrid(
-        modifier = modifier.fillMaxSize(),
-        columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (m == null) {
-            item(span = { GridItemSpan(2) }) {
-                Text(
-                    "CONNEXION AU SERVEUR...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PcmonDim,
-                    modifier = Modifier.padding(16.dp),
-                )
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 1100.dp)
+                    .align(Alignment.TopCenter),
+            columns = GridCells.Adaptive(minSize = 180.dp),
+            contentPadding = PaddingValues(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (m == null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        "Connexion au PC…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PcmonDim,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+                return@LazyVerticalGrid
             }
-            return@LazyVerticalGrid
-        }
-        val h = vm.history
+            val h = vm.history
 
-        item {
-            MetricCard(
-                "CPU",
-                formatPercent(m.cpuPercent),
-                sub =
-                    buildString {
-                        append(m.cpuCount)
-                        append(" cœurs")
-                        if (m.cpuFreqMhz > 0) {
-                            append(" · ")
-                            append(m.cpuFreqMhz.toInt())
-                            append(" MHz")
-                        }
-                    },
-            ) {
-                PixelChart(h.get("cpu"), max = 100f)
-            }
-        }
-
-        item {
-            MetricCard(
-                "RAM",
-                formatPercent(m.ramPercent),
-                sub =
-                    buildString {
-                        append(formatBytes(m.ramUsed))
-                        append(" / ")
-                        append(formatBytes(m.ramTotal))
-                        if (m.swapPercent > 0) {
-                            append(" · swap ")
-                            append(formatPercent(m.swapPercent))
-                        }
-                    },
-            ) {
-                PixelChart(h.get("ram"), max = 100f)
-            }
-        }
-
-        if (m.gpuAvailable) {
             item {
                 MetricCard(
-                    "GPU",
-                    formatPercent(m.gpuPercent),
+                    "CPU",
+                    formatPercent(m.cpuPercent),
                     sub =
                         buildString {
-                            append(m.gpuName)
-                            append(" · VRAM ")
-                            append(formatPercent(m.gpuMemPercent))
-                            if (m.gpuTemp > 0) {
+                            append(m.cpuCount)
+                            append(" cœurs")
+                            if (m.cpuFreqMhz > 0) {
                                 append(" · ")
-                                append(m.gpuTemp.toInt())
-                                append("°C")
+                                append(m.cpuFreqMhz.toInt())
+                                append(" MHz")
                             }
                         },
                 ) {
-                    PixelChart(h.get("gpu"), max = 100f)
+                    LineChart(h.get("cpu"), max = 100f)
                 }
             }
-        } else {
-            item {
-                MetricCard("GPU", "N/A", sub = "GPU NVIDIA non détecté (pynvml)") {
-                    PixelChart(emptyList(), max = 100f)
-                }
-            }
-        }
 
-        val netMax = max(64f, (h.get("net_down").maxOrNull() ?: 0f) * 1.2f)
-        val netStats = stats(h.get("net_down"))
-        item {
-            MetricCard(
-                "RÉSEAU",
-                "↓ ${formatRate(m.netDownKbps)}",
-                sub =
-                    buildString {
-                        append("↑ ")
-                        append(formatRate(m.netUpKbps))
-                        append(" · min/max ↓ ")
-                        append(formatRate(netStats.first))
-                        append(" / ")
-                        append(formatRate(netStats.third))
-                    },
-            ) {
-                PixelChart(h.get("net_down"), secondary = h.get("net_up"), max = netMax)
-            }
-        }
-
-        val ioMax =
-            max(
-                16f,
-                max(h.get("disk_read").maxOrNull() ?: 0f, h.get("disk_write").maxOrNull() ?: 0f) * 1.2f,
-            )
-        item {
-            MetricCard(
-                "DISQUE",
-                formatPercent(m.diskPercent),
-                sub =
-                    buildString {
-                        append("R ")
-                        append(formatMbps(m.diskReadMbps))
-                        append(" · W ")
-                        append(formatMbps(m.diskWriteMbps))
-                        append(" · ")
-                        append(formatBytes(m.diskUsed))
-                        append("/")
-                        append(formatBytes(m.diskTotal))
-                    },
-            ) {
-                PixelChart(h.get("disk_read"), secondary = h.get("disk_write"), max = ioMax)
-            }
-        }
-
-        if (!m.cpuTemp.isNaN()) {
             item {
                 MetricCard(
-                    "TEMP CPU",
-                    "${m.cpuTemp.toInt()}°C",
-                    sub = "max ${stats(h.get("temp")).third.toInt()}°C sur la fenêtre",
+                    "RAM",
+                    formatPercent(m.ramPercent),
+                    sub =
+                        buildString {
+                            append(formatBytes(m.ramUsed))
+                            append(" / ")
+                            append(formatBytes(m.ramTotal))
+                            if (m.swapPercent > 0) {
+                                append(" · swap ")
+                                append(formatPercent(m.swapPercent))
+                            }
+                        },
                 ) {
-                    PixelChart(h.get("temp"), max = 100f)
+                    LineChart(h.get("ram"), max = 100f)
                 }
             }
-        }
 
-        item(span = { GridItemSpan(2) }) { SystemCard(m) }
-        item(span = { GridItemSpan(2) }) { ProcessesCard(m) }
+            if (m.gpuAvailable) {
+                item {
+                    MetricCard(
+                        "GPU",
+                        formatPercent(m.gpuPercent),
+                        sub =
+                            buildString {
+                                append(m.gpuName)
+                                append(" · VRAM ")
+                                append(formatPercent(m.gpuMemPercent))
+                                if (m.gpuTemp > 0) {
+                                    append(" · ")
+                                    append(m.gpuTemp.toInt())
+                                    append("°C")
+                                }
+                            },
+                    ) {
+                        LineChart(h.get("gpu"), max = 100f)
+                    }
+                }
+            } else {
+                item {
+                    MetricCard("GPU", "N/A", sub = "GPU non détecté : NVIDIA (NVML) ou AMD requis") {
+                        LineChart(emptyList(), max = 100f)
+                    }
+                }
+            }
+
+            val netMax = max(64f, (h.get("net_down").maxOrNull() ?: 0f) * 1.2f)
+            val netStats = stats(h.get("net_down"))
+            item {
+                MetricCard(
+                    "RÉSEAU",
+                    "↓ ${formatRate(m.netDownKbps)}",
+                    sub =
+                        buildString {
+                            append("↑ ")
+                            append(formatRate(m.netUpKbps))
+                            append(" · min/max ↓ ")
+                            append(formatRate(netStats.first))
+                            append(" / ")
+                            append(formatRate(netStats.third))
+                        },
+                ) {
+                    LineChart(h.get("net_down"), secondary = h.get("net_up"), max = netMax)
+                }
+            }
+
+            val ioMax =
+                max(
+                    16f,
+                    max(h.get("disk_read").maxOrNull() ?: 0f, h.get("disk_write").maxOrNull() ?: 0f) * 1.2f,
+                )
+            item {
+                MetricCard(
+                    "DISQUE",
+                    formatPercent(m.diskPercent),
+                    sub =
+                        buildString {
+                            append("R ")
+                            append(formatMbps(m.diskReadMbps))
+                            append(" · W ")
+                            append(formatMbps(m.diskWriteMbps))
+                            append(" · ")
+                            append(formatBytes(m.diskUsed))
+                            append("/")
+                            append(formatBytes(m.diskTotal))
+                        },
+                ) {
+                    LineChart(h.get("disk_read"), secondary = h.get("disk_write"), max = ioMax)
+                }
+            }
+
+            if (!m.cpuTemp.isNaN()) {
+                item {
+                    MetricCard(
+                        "TEMP CPU",
+                        "${m.cpuTemp.toInt()}°C",
+                        sub = "max ${stats(h.get("temp")).third.toInt()}°C sur la fenêtre",
+                    ) {
+                        LineChart(h.get("temp"), max = 100f)
+                    }
+                }
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) { SystemCard(m) }
+            item(span = { GridItemSpan(maxLineSpan) }) { ProcessesCard(m) }
+        }
     }
 }
 
@@ -192,12 +201,12 @@ private fun SystemCard(m: Metrics) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .border(1.dp, PcmonBorder)
+                .clip(RoundedCornerShape(18.dp))
                 .background(PcmonPanel)
-                .padding(10.dp),
+                .padding(14.dp),
     ) {
-        Text("SYSTÈME", style = MaterialTheme.typography.labelSmall, color = PcmonDim)
-        Spacer(Modifier.height(6.dp))
+        Text("SYSTÈME", style = MaterialTheme.typography.labelLarge, color = PcmonDim)
+        Spacer(Modifier.height(8.dp))
         InfoLine("Hôte", m.host)
         InfoLine("OS", m.os)
         InfoLine("CPU", m.cpuModel)
@@ -220,10 +229,10 @@ private fun InfoLine(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(key, style = MaterialTheme.typography.bodySmall, color = PcmonDim)
+        Text(key, style = MaterialTheme.typography.bodyMedium, color = PcmonDim)
         Text(
             value,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = PcmonWhite,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -237,12 +246,12 @@ private fun ProcessesCard(m: Metrics) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .border(1.dp, PcmonBorder)
+                .clip(RoundedCornerShape(18.dp))
                 .background(PcmonPanel)
-                .padding(10.dp),
+                .padding(14.dp),
     ) {
-        Text("PROCESSUS (top CPU)", style = MaterialTheme.typography.labelSmall, color = PcmonDim)
-        Spacer(Modifier.height(6.dp))
+        Text("PROCESSUS (top CPU)", style = MaterialTheme.typography.labelLarge, color = PcmonDim)
+        Spacer(Modifier.height(8.dp))
         if (m.processes.isEmpty()) {
             Text("n/a", style = MaterialTheme.typography.bodySmall, color = PcmonDim)
         }
@@ -253,7 +262,7 @@ private fun ProcessesCard(m: Metrics) {
             ) {
                 Text(
                     p.name,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = PcmonMid,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -261,7 +270,7 @@ private fun ProcessesCard(m: Metrics) {
                 )
                 Text(
                     String.format(Locale.FRENCH, "CPU %.0f %% · RAM %.1f %%", p.cpu, p.mem),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = PcmonWhite,
                 )
             }

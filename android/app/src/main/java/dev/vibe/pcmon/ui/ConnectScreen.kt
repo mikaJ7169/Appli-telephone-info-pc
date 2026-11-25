@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -31,21 +32,18 @@ import dev.vibe.pcmon.theme.PcmonWhite
 
 private val HELP =
     """
-    USB (adb) :  adb reverse tcp:8765 tcp:8765
-                 puis adresse : http://127.0.0.1:8765
+    Connexion automatique : branche le téléphone en USB (partage de
+    connexion) ou mets-le sur le même Wi-Fi que le PC, puis lance
+    l'appli — le PC est détecté tout seul.
 
-    Câble USB + partage de connexion :
-                 adresse : http://192.168.42.129:8765
-                 (IP du PC côté partage USB)
-
-    Wi-Fi (même réseau) :
-                 lancer le serveur avec --host 0.0.0.0
-                 adresse : http://<IP-du-PC>:8765
+    Le champ ci-dessous sert uniquement de secours manuel
+    (ex. http://192.168.1.21:8765).
     """.trimIndent()
 
 @Composable
 fun ConnectScreen(
     url: String,
+    foundServer: String?,
     error: String?,
     onUrlChange: (String) -> Unit,
     onConnect: () -> Unit,
@@ -60,22 +58,45 @@ fun ConnectScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Text("PCMON", style = MaterialTheme.typography.displayMedium, color = PcmonWhite)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             "moniteur PC en temps réel",
             style = MaterialTheme.typography.bodyMedium,
             color = PcmonDim,
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
+        if (foundServer != null) {
+            Text(
+                "PC trouvé : $foundServer — connexion…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = PcmonWhite,
+            )
+        } else {
+            Text(
+                "Recherche automatique d'un PC sur le réseau…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = PcmonMid,
+            )
+        }
+        if (error != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "hors ligne : $error — nouvelle tentative…",
+                style = MaterialTheme.typography.bodySmall,
+                color = PcmonDim,
+            )
+        }
+        Spacer(Modifier.height(28.dp))
         OutlinedTextField(
             value = text,
             onValueChange = {
                 text = it
                 onUrlChange(it)
             },
-            label = { Text("Adresse du serveur") },
-            placeholder = { Text("http://127.0.0.1:8765", color = PcmonDim) },
+            label = { Text("Adresse manuelle (secours)") },
+            placeholder = { Text("http://192.168.1.21:8765", color = PcmonDim) },
             singleLine = true,
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             colors =
                 OutlinedTextFieldDefaults.colors(
@@ -92,21 +113,14 @@ fun ConnectScreen(
         Button(
             onClick = onConnect,
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = PcmonWhite,
                     contentColor = Color.Black,
                 ),
         ) {
-            Text("CONNEXION")
-        }
-        if (error != null) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "hors ligne : $error — reconnexion automatique...",
-                style = MaterialTheme.typography.bodySmall,
-                color = PcmonMid,
-            )
+            Text("CONNEXION MANUELLE")
         }
         Spacer(Modifier.height(24.dp))
         Text(HELP, style = MaterialTheme.typography.bodySmall, color = PcmonDim)

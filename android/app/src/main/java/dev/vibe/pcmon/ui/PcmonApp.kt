@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,11 +40,8 @@ fun PcmonApp(vm: DashboardViewModel = viewModel()) {
     val connected by vm.connected.collectAsState()
     val url by vm.url.collectAsState()
     val error by vm.lastError.collectAsState()
+    val foundServer by vm.foundServer.collectAsState()
     var draft by remember(url) { mutableStateOf(url) }
-
-    LaunchedEffect(Unit) {
-        if (url.isNotBlank()) vm.connect(url)
-    }
 
     Scaffold(
         containerColor = PcmonBlack,
@@ -83,6 +79,7 @@ fun PcmonApp(vm: DashboardViewModel = viewModel()) {
         } else {
             ConnectScreen(
                 url = draft,
+                foundServer = foundServer,
                 error = error,
                 onUrlChange = { draft = it },
                 onConnect = { vm.connect(draft) },

@@ -9,16 +9,30 @@ pip install -r requirements.txt
 ```
 
 - `psutil` : CPU, RAM, disque, réseau, températures, batterie, processus (obligatoire).
-- `nvidia-ml-py` : GPU NVIDIA (utilisation, VRAM, température). Sans cette librairie ou
-  sans GPU NVIDIA, le champ `gpu` vaut simplement `{"available": false}`.
+- `nvidia-ml-py` : GPU **NVIDIA** (utilisation, VRAM, température) via NVML.
+- `amdsmi` (Linux uniquement) : GPU **AMD** via la librairie officielle AMD (utilisation,
+  VRAM, température). Sans `amdsmi`, repli sur la commande `rocm-smi` si installée.
+- `wmi` (Windows uniquement) : nom de la carte graphique.
+- Sur **Windows**, en l'absence de NVML, les **compteurs de performance Windows**
+  (`Get-Counter` : GPU Engine / GPU Adapter Memory) donnent utilisation + VRAM pour
+  n'importe quel GPU (AMD, Intel…), sans dépendance supplémentaire.
+
+Sans aucun de ces backends, le champ `gpu` vaut `{"available": false, "name": "<carte>"}`
+quand le nom est trouvable.
 
 ## Lancement
 
 ```bash
-python3 server.py                     # 127.0.0.1:8765, 1 échantillon/s
-python3 server.py --host 0.0.0.0      # accessible depuis le Wi-Fi
+python3 server.py --host 0.0.0.0      # recommandé : 0.0.0.0:8765, 1 échantillon/s
+python3 server.py                     # 127.0.0.1:8765 (adb reverse uniquement)
 python3 server.py --port 9000 --interval 0.5
+# Windows : double-clic sur start-server.bat (idem pour start-server.sh sous Linux/macOS)
 ```
+
+**Découverte automatique** : le serveur s'annonce toutes les 2 s en broadcast UDP sur le
+port **8766** (`PCMON/1 <nom-du-PC> <port>`), sur 255.255.255.255 et sur l'adresse de
+broadcast de chaque interface (Wi-Fi, Ethernet, partage USB…). L'appli écoute ce port et
+se connecte toute seule — plus besoin de connaître l'IP du PC.
 
 Endpoints :
 
@@ -54,36 +68,30 @@ Exemple de JSON (`/metrics`) :
 
 Les débits réseau/disk sont des taux calculés entre deux échantillons (0 au premier appel).
 
-## Lancement automatique
+## Lancement automatique au démarrage du PC
 
-### Windows (tâche planifiée)
+Rien à lancer à la main : une fois installé, le serveur tourne dès l'ouverture de session.
 
-`Planificateur de tâches` → Créer une tâche → déclencheur « À la connexion » :
+### Windows
 
-```
-Programme : python3.exe
-Arguments : C:\chemin\vers\pc-server\server.py --host 127.0.0.1 --port 8765
-```
+Double-clic sur **`install-autostart.bat`** → crée un lanceur caché
+(`pcmon-launch.vbs`) + un raccourci dans le dossier **Démarrage**
+(`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\PCMon Server.lnk`).
+Le serveur démarre alors automatiquement à chaque ouverture de session, fenêtre cachée.
+Pour retirer : double-clic sur **`uninstall-autostart.bat`**.
+
+> Au premier lancement, le pare-feu Windows peut demander d'autoriser `python.exe` :
+> coche **réseau privé** → OK (à faire une seule fois).
 
 ### Linux (systemd, utilisateur)
 
-`~/.config/systemd/user/pcmon.service` :
-
-```ini
-[Unit]
-Description=PCMon serveur de métriques
-
-[Service]
-ExecStart=/usr/bin/python3 /home/%u/pc-server/server.py --host 127.0.0.1 --port 8765
-Restart=always
-
-[Install]
-WantedBy=default.target
-```
-
 ```bash
-systemctl --user enable --now pcmon.service
+./install-autostart.sh     # crée et active ~/.config/systemd/user/pcmon.service
+./uninstall-autostart.sh   # retire le démarrage automatique
 ```
+
+Vérifier : `systemctl --user status pcmon.service` — le serveur démarre à chaque session
+et redémarre automatiquement s'il plante (`Restart=always`).
 
 ## Sécurité
 
