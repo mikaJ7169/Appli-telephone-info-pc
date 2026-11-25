@@ -27,6 +27,14 @@ courbes style pixel-art (thème noir / blanc / gris) :
 - `android/` : appli Android Jetpack Compose. Les courbes sont dessinées sur un `Canvas`
   par colonnes de pixels (rendu sans anti-aliasing, grille 20 rangées).
 
+## Guide visuel (fichier canvas)
+
+Ouvrez [`docs/guide-canvas.html`](docs/guide-canvas.html) dans n'importe quel navigateur :
+un poster pixel-art (thème noir/blanc/gris) dessiné sur un élément `<canvas>`, en 2 pages
+(clic ou flèche → pour changer de page) — **1/2 Installer** (PC, lien téléphone, appli)
+et **2/2 Utiliser** (légende des cartes, dépannage). Capture d'écran ou Ctrl+P pour
+l'exporter en image (importable ensuite dans Canva ou autre outil de design).
+
 ## 1. Installation côté PC
 
 Prérequis : Python 3.10+.
