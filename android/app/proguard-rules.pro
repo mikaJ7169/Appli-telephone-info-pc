@@ -1,0 +1,1 @@
+-keep class dev.vibe.pcmon.data.** { *; }
