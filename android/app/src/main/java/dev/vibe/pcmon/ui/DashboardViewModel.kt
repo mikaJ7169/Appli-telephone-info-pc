@@ -192,7 +192,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                         ok = true
                         break
                     }
-                    if (probe(u, 2500)) {
+                    if (probe(u, 6000)) {
                         connect(u)
                         ok = true
                         break
@@ -203,7 +203,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                     while (System.currentTimeMillis() < deadline && !connected.value) {
                         val d = discovered.tryReceive().getOrNull()
                         if (d != null) {
-                            if (probe(d, 2500)) {
+                            if (probe(d, 6000)) {
                                 connect(d)
                                 ok = true
                                 break

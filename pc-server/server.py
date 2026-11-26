@@ -175,7 +175,7 @@ def _gpu_windows_counters():
     if platform.system() != "Windows":
         return None
     now = time.time()
-    if now - _win_gpu_cache["t"] < 5:
+    if now - _win_gpu_cache["t"] < 10:
         return _win_gpu_cache["m"]
     ps = (
         "$u=(Get-Counter '\\GPU Engine(*)\\Utilization Percentage' -ErrorAction SilentlyContinue).CounterSamples | Measure-Object CookedValue -Sum | Select-Object -ExpandProperty Sum;"
@@ -189,7 +189,7 @@ def _gpu_windows_counters():
             ["powershell", "-NoProfile", "-Command", ps],
             capture_output=True,
             text=True,
-            timeout=20,
+            timeout=8,
         )
         d = json.loads(r.stdout.strip())
     except Exception:
@@ -431,6 +431,7 @@ def main():
             pass
 
     threading.Thread(target=_discovery_broadcast, args=(args.port,), daemon=True).start()
+    threading.Thread(target=gpu_metrics, daemon=True).start()
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     ips = sorted(
         {
