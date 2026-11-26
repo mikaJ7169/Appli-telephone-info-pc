@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.coroutines.coroutineContext
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("pcmon", Context.MODE_PRIVATE)
@@ -114,7 +115,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
 
     private suspend fun autoConnectLoop() {
-        while (isActive) {
+        while (coroutineContext.isActive) {
             if (!connected.value) {
                 val saved = _url.value
                 val base = mutableListOf<String>()

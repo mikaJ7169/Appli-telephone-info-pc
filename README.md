@@ -119,6 +119,6 @@ pc-server/            serveur de métriques (Python)
 android/              appli Android (Kotlin + Jetpack Compose)
   app/src/main/java/dev/vibe/pcmon/
     data/             modèle JSON, client SSE, historique glissant
-    ui/               écrans, courbes pixel, ViewModel
+    ui/               écrans, courbes lissées (Canvas), ViewModel, découverte auto
     theme/            palette noir/blanc/gris + police monospace
 ```
