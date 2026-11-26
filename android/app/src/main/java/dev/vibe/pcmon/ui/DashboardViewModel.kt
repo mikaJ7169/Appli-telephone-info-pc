@@ -3,9 +3,11 @@ package dev.vibe.pcmon.ui
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.LinkAddress
 import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.RouteInfo
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.vibe.pcmon.data.DiscoveryClient
@@ -26,6 +28,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.Inet4Address
+import java.net.InetAddress
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.Volatile
@@ -94,8 +97,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private fun gatewayUrls(): List<String> {
         val out = mutableListOf<String>()
         runCatching {
-            val lp = connectivity.getLinkProperties(connectivity.activeNetwork)
-            lp?.routes?.forEach { route ->
+            val lp = connectivity.getLinkProperties(connectivity.activeNetwork) ?: return@runCatching
+            val routes: List<RouteInfo> = lp.routes
+            for (route in routes) {
                 if (route.isDefaultRoute) {
                     route.gateway?.hostAddress?.let { out.add("http://$it:8765") }
                 }
@@ -108,10 +112,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         val out = mutableListOf<String>()
         runCatching {
             val lp = connectivity.getLinkProperties(connectivity.activeNetwork) ?: return@runCatching
-            for (addr in lp.addresses) {
-                if (addr.address is Inet4Address) {
-                    val ip = addr.address.hostAddress ?: continue
-                    val prefix = addr.prefixLength
+            val linkAddresses: List<LinkAddress> = lp.linkAddresses
+            for (la in linkAddresses) {
+                val addr = la.address
+                if (addr is Inet4Address) {
+                    val ip = addr.hostAddress ?: continue
+                    val prefix = la.prefixLength
                     if (prefix in 8..30) out.addAll(scanTargets(ip, prefix))
                 }
             }
