@@ -55,12 +55,22 @@ fun DashboardScreen(
         ) {
             if (m == null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        "Connexion au PC…",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = PcmonDim,
-                        modifier = Modifier.padding(16.dp),
-                    )
+                    val error by vm.lastError.collectAsState()
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "Connexion au PC…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = PcmonDim,
+                        )
+                        if (error != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "erreur : $error",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PcmonMid,
+                            )
+                        }
+                    }
                 }
                 return@LazyVerticalGrid
             }

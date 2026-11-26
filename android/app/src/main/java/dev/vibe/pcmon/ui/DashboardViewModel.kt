@@ -13,7 +13,7 @@ import androidx.lifecycle.viewModelScope
 import dev.vibe.pcmon.data.DiscoveryClient
 import dev.vibe.pcmon.data.MetricHistory
 import dev.vibe.pcmon.data.Metrics
-import dev.vibe.pcmon.data.SseClient
+import dev.vibe.pcmon.data.MetricsPoller
 import dev.vibe.pcmon.data.parseMetrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -37,7 +37,7 @@ import kotlin.coroutines.coroutineContext
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("pcmon", Context.MODE_PRIVATE)
-    private val client = SseClient()
+    private val client = MetricsPoller()
     private val discovery = DiscoveryClient()
     private val connectivity = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val history = MetricHistory()
@@ -232,11 +232,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         _lastError.value = null
         client.start(
             normalized,
-            autoReconnect = true,
-            onOpen = {
-                viewModelScope.launch(Dispatchers.Main) { _connected.value = true }
-            },
-            onEvent = { json ->
+            onMetrics = { json ->
                 viewModelScope.launch(Dispatchers.Default) {
                     try {
                         val m = parseMetrics(json)
@@ -245,7 +241,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                             _metrics.value = m
                             _connected.value = true
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            _lastError.value = "parse: ${e.message ?: e.javaClass.simpleName}"
+                        }
                     }
                 }
             },
