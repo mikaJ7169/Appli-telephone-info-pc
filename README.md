@@ -99,8 +99,17 @@ enregistrée.
 
 ## Dépannage
 
-- **« hors ligne » dans l'appli** : vérifie que `server.py` tourne, que l'adresse est bonne,
-  et teste depuis le navigateur du téléphone (`http://<IP>:8765/`).
+- **L'appli ne trouve pas le PC** : la détection auto marche par annonce UDP (port 8766),
+  sonde de la passerelle et **scan de tout le sous-réseau local** (port 8765). Vérifie :
+  1. le serveur tourne sur le PC : navigateur du PC → `http://127.0.0.1:8765/` doit afficher
+     du JSON (sinon relance `start-server.bat` et regarde le message d'erreur) ;
+  2. téléphone et PC sont sur le même réseau : Wi-Fi de la même box (IP du téléphone en
+     `192.168.1.x` comme le PC) **ou** partage de connexion USB activé ;
+  3. pare-feu Windows : les règles 8765/TCP + 8766/UDP sont ajoutées par `install-autostart`
+     (le relancer **en administrateur** si besoin), sinon autorise `python.exe` manuellement
+     (profils Privé **et** Public — l'interface USB tethering est souvent en Public) ;
+  4. test depuis Chrome du téléphone : `http://<IP-du-PC>:8765/` → JSON = le réseau est OK,
+     saisis cette adresse dans le champ manuel de l'appli en secours.
 - **adb reverse** : la commande ne survit pas au débranchement du câble ; la relancer à
   chaque reconnexion, ou passe en partage USB / Wi-Fi.
 - **GPU « N/A »** : NVIDIA → `nvidia-ml-py` (NVML) ; AMD → `amdsmi` sous Linux (ou
