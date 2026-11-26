@@ -15,15 +15,20 @@ import dev.vibe.pcmon.data.SseClient
 import dev.vibe.pcmon.data.parseMetrics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
+import java.net.Inet4Address
 import java.net.URL
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.coroutineContext
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
@@ -50,9 +55,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     private val discovered = Channel<String>(Channel.UNLIMITED)
 
+    @Volatile
+    private var lastScan = 0L
+
     private val networkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                lastScan = 0L
                 viewModelScope.launch { pushGatewayCandidates() }
             }
 
@@ -60,6 +69,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 network: Network,
                 linkProperties: LinkProperties,
             ) {
+                lastScan = 0L
                 viewModelScope.launch { pushGatewayCandidates() }
             }
         }
@@ -94,6 +104,36 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         return out.distinct()
     }
 
+    private fun subnetHosts(): List<String> {
+        val out = mutableListOf<String>()
+        runCatching {
+            val lp = connectivity.getLinkProperties(connectivity.activeNetwork) ?: return@runCatching
+            for (addr in lp.addresses) {
+                if (addr.address is Inet4Address) {
+                    val ip = addr.address.hostAddress ?: continue
+                    val prefix = addr.prefixLength
+                    if (prefix in 8..30) out.addAll(scanTargets(ip, prefix))
+                }
+            }
+        }
+        return out.distinct()
+    }
+
+    private fun scanTargets(ip: String, prefix: Int): List<String> {
+        val parts = ip.split(".").map { it.toInt() }
+        val total = 1 shl (32 - prefix)
+        val cap = minOf(total - 2, 254)
+        val base = (parts[0] shl 24) or (parts[1] shl 16) or (parts[2] shl 8) or parts[3]
+        val mask = if (prefix == 0) 0 else (-1 shl (32 - prefix))
+        val network = base and mask
+        val hosts = mutableListOf<String>()
+        for (i in 1..cap) {
+            val a = network + i
+            hosts.add("${(a ushr 24) and 0xFF}.${(a ushr 16) and 0xFF}.${(a ushr 8) and 0xFF}.${a and 0xFF}")
+        }
+        return hosts
+    }
+
     private suspend fun pushGatewayCandidates() {
         gatewayUrls().forEach { discovered.trySend(it) }
     }
@@ -114,35 +154,62 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+    private suspend fun probeSubnet(): String? =
+        coroutineScope {
+            val targets = subnetHosts()
+            if (targets.isEmpty()) return@coroutineScope null
+            val sem = Semaphore(24)
+            val found = AtomicReference<String?>(null)
+            targets.forEach { host ->
+                launch(Dispatchers.IO) {
+                    sem.withPermit {
+                        if (found.get() == null && probe("http://$host:8765", 1200)) {
+                            found.set("http://$host:8765")
+                        }
+                    }
+                }
+            }
+            found.get()
+        }
+
     private suspend fun autoConnectLoop() {
         while (coroutineContext.isActive) {
             if (!connected.value) {
                 val saved = _url.value
-                val base = mutableListOf<String>()
-                if (saved.isNotBlank()) base.add(saved)
-                base.addAll(gatewayUrls())
-                val deadline = System.currentTimeMillis() + 8000
-                var connectedNow = false
-                while (!connectedNow && System.currentTimeMillis() < deadline && !connected.value) {
-                    for (u in base.toSet()) {
-                        if (connected.value) break
-                        if (probe(u, 2500)) {
-                            connect(u)
-                            connectedNow = true
-                            break
-                        }
+                val quick = mutableListOf<String>()
+                if (saved.isNotBlank()) quick.add(saved)
+                quick.addAll(gatewayUrls())
+                var ok = false
+                for (u in quick.toSet()) {
+                    if (connected.value) {
+                        ok = true
+                        break
                     }
-                    if (!connectedNow) {
+                    if (probe(u, 2500)) {
+                        connect(u)
+                        ok = true
+                        break
+                    }
+                }
+                if (!ok) {
+                    val deadline = System.currentTimeMillis() + 8000
+                    while (System.currentTimeMillis() < deadline && !connected.value) {
                         val d = discovered.tryReceive().getOrNull()
                         if (d != null) {
                             if (probe(d, 2500)) {
                                 connect(d)
-                                connectedNow = true
+                                ok = true
+                                break
                             }
                         } else {
-                            delay(1000)
+                            delay(500)
                         }
                     }
+                }
+                if (!ok && !connected.value && System.currentTimeMillis() - lastScan > 20000) {
+                    lastScan = System.currentTimeMillis()
+                    val found = probeSubnet()
+                    if (found != null && !connected.value) connect(found)
                 }
             }
             delay(3000)
