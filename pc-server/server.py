@@ -263,11 +263,19 @@ def io_rates():
 def cpu_temp():
     try:
         temps = psutil.sensors_temperatures()
+        for entries in temps.values():
+            if entries:
+                return round(entries[0].current, 1)
     except Exception:
-        return None
-    for entries in temps.values():
-        if entries:
-            return round(entries[0].current, 1)
+        pass
+    if platform.system() == "Windows":
+        try:
+            import wmi
+
+            for t in wmi.WMI(namespace="root\\wmi").MSAcpi_ThermalZoneTemperature():
+                return round((t.CurrentTemperature - 2732) / 10.0, 1)
+        except Exception:
+            pass
     return None
 
 

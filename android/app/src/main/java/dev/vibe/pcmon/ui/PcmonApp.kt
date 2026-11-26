@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -17,6 +19,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,6 +46,7 @@ fun PcmonApp(vm: DashboardViewModel = viewModel()) {
     val error by vm.lastError.collectAsState()
     val foundServer by vm.foundServer.collectAsState()
     var draft by remember(url) { mutableStateOf(url) }
+    var tab by remember { mutableStateOf(0) }
 
     Scaffold(
         containerColor = PcmonBlack,
@@ -75,7 +80,35 @@ fun PcmonApp(vm: DashboardViewModel = viewModel()) {
         },
     ) { padding ->
         if (connected) {
-            DashboardScreen(vm, modifier = Modifier.padding(padding))
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                TabRow(
+                    selectedTabIndex = tab,
+                    containerColor = PcmonBlack,
+                    contentColor = PcmonWhite,
+                    divider = {},
+                    indicator = {},
+                ) {
+                    Tab(
+                        selected = tab == 0,
+                        onClick = { tab = 0 },
+                        text = { Text("GRAPHIQUES") },
+                        selectedContentColor = PcmonWhite,
+                        unselectedContentColor = PcmonDim,
+                    )
+                    Tab(
+                        selected = tab == 1,
+                        onClick = { tab = 1 },
+                        text = { Text("SYSTÈME") },
+                        selectedContentColor = PcmonWhite,
+                        unselectedContentColor = PcmonDim,
+                    )
+                }
+                if (tab == 0) {
+                    DashboardScreen(vm, modifier = Modifier.weight(1f))
+                } else {
+                    SystemScreen(vm, modifier = Modifier.weight(1f))
+                }
+            }
         } else {
             ConnectScreen(
                 url = draft,

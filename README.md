@@ -3,7 +3,12 @@
 Branche ton téléphone à ton PC (USB ou Wi-Fi), lance l'appli : **aucune IP à saisir**,
 le PC est détecté automatiquement. L'appli affiche alors en temps réel des courbes lissées
 dans un thème sombre moderne (noir / blanc / gris), utilisable en **portrait et paysage**,
-et elle **empêche la mise en veille de l'écran** tant qu'elle tourne :
+et elle **empêche la mise en veille de l'écran** tant qu'elle tourne.
+
+**Écran « GRAPHIQUES »** : uniquement les courbes, qui remplissent **tout l'écran sans
+défiler** (grille 2 colonnes en portrait, 4 en paysage) ; les infos complémentaires
+(valeur, détails) sont à **droite de chaque graphique**. Onglet **« SYSTÈME »** pour
+hôte, OS, uptime, batterie et top processus :
 
 - **CPU** : charge globale %, nombre de cœurs, fréquence
 - **RAM** : utilisation %, Go utilisés / total, swap
@@ -115,8 +120,8 @@ enregistrée.
 - **GPU « N/A »** : NVIDIA → `nvidia-ml-py` (NVML) ; AMD → `amdsmi` sous Linux (ou
   `rocm-smi` installé) et les compteurs de performance Windows (`Get-Counter`, fonctionne
   aussi pour Intel). Sinon, seul le nom de la carte est affiché.
-- **Température CPU absente** : dépend des capteurs exposés par la carte mère (Linux :
-  paquet `lm-sensors`, Windows : généralement OK).
+- **Température CPU absente** : Linux → paquet `lm-sensors` ; Windows → sonde WMI
+  `MSAcpi_ThermalZoneTemperature` (ajoutée automatiquement).
 - **Wi-Fi** : le pare-feu Windows peut demander d'autoriser Python sur le réseau privé.
 
 ## Structure du dépôt

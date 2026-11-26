@@ -20,13 +20,13 @@ import dev.vibe.pcmon.theme.PcmonWhite
 @Composable
 fun LineChart(
     primary: List<Float>,
-    modifier: Modifier = Modifier,
     secondary: List<Float>? = null,
     max: Float,
+    modifier: Modifier = Modifier.fillMaxWidth().height(110.dp),
     primaryColor: Color = PcmonWhite,
     secondaryColor: Color = PcmonAccent,
 ) {
-    Canvas(modifier = modifier.fillMaxWidth().height(110.dp)) {
+    Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
         val padX = 2f
