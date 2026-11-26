@@ -418,7 +418,7 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     global INTERVAL
     ap = argparse.ArgumentParser(description="Serveur de métriques PC temps réel pour l'appli PCMon")
-    ap.add_argument("--host", default="127.0.0.1", help="adresse d'écoute (127.0.0.1 par défaut, 0.0.0.0 pour le Wi-Fi)")
+    ap.add_argument("--host", default="0.0.0.0", help="adresse d'écoute (0.0.0.0 par défaut = réseau local ; 127.0.0.1 pour adb reverse uniquement)")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--interval", type=float, default=1.0, help="secondes entre deux échantillons")
     args = ap.parse_args()

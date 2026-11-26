@@ -213,6 +213,15 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                 }
+                if (!ok && !connected.value) {
+                    val found = _foundServer.value
+                    if (found != null) {
+                        _lastError.value =
+                            "PC détecté ($found) mais port 8765 injoignable — pare-feu Windows ? ou serveur lancé sans --host 0.0.0.0 ? Teste depuis le navigateur du téléphone : $found/"
+                    } else {
+                        _lastError.value = "Aucun PC détecté sur le réseau (UDP 8766 + scan du sous-réseau)"
+                    }
+                }
                 if (!ok && !connected.value && System.currentTimeMillis() - lastScan > 20000) {
                     lastScan = System.currentTimeMillis()
                     val found = probeSubnet()

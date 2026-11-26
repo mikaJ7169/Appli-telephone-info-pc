@@ -23,8 +23,8 @@ quand le nom est trouvable.
 ## Lancement
 
 ```bash
-python3 server.py --host 0.0.0.0      # recommandé : 0.0.0.0:8765, 1 échantillon/s
-python3 server.py                     # 127.0.0.1:8765 (adb reverse uniquement)
+python3 server.py                     # 0.0.0.0:8765 par défaut, 1 échantillon/s
+python3 server.py --host 127.0.0.1    # mode loopback strict (adb reverse uniquement)
 python3 server.py --port 9000 --interval 0.5
 # Windows : double-clic sur start-server.bat (idem pour start-server.sh sous Linux/macOS)
 ```
@@ -95,6 +95,7 @@ et redémarre automatiquement s'il plante (`Restart=always`).
 
 ## Sécurité
 
-Par défaut (`--host 127.0.0.1`), seules les connexions locales sont acceptées — idéal avec
-`adb reverse`. Avec `--host 0.0.0.0` (nécessaire en Wi-Fi), le port est visible sur le réseau
-local : garde le pare-feu actif et n'ouvre le port 8765 que sur ton réseau de confiance.
+Par défaut le serveur écoute sur `0.0.0.0:8765` (réseau local, nécessaire à la détection auto
+et au partage USB). `install-autostart` ajoute les règles pare-feu 8765/TCP + 8766/UDP ;
+n'ouvre ces ports que sur ton réseau de confiance (profil Privé). Pour un mode strict
+loopback (adb reverse uniquement) : `--host 127.0.0.1`.

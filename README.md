@@ -51,7 +51,8 @@ Prérequis : Python 3.10+.
 ```bash
 cd pc-server
 pip install -r requirements.txt        # psutil + nvidia-ml-py (NVIDIA) + amdsmi (AMD Linux) + wmi (Windows)
-python3 server.py --host 0.0.0.0       # ou double-clic sur start-server.bat (Windows)
+python3 server.py                      # écoute sur 0.0.0.0:8765 par défaut
+                                        # (Windows : double-clic sur start-server.bat)
 ```
 
 **Zéro configuration ensuite** : double-clic une seule fois sur `pc-server\install-autostart.bat`
@@ -62,13 +63,14 @@ Options : `--host 0.0.0.0` (accès depuis le Wi-Fi), `--port 8765`, `--interval 
 
 Test rapide dans un navigateur du PC : [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
 
-Par défaut le serveur n'écoute que sur `127.0.0.1` (rien d'exposé sur le réseau).
-Passe `--host 0.0.0.0` uniquement pour le Wi-Fi, et laisse le pare-feu bloquer le port 8765
-depuis l'extérieur (ou limite-le à ton réseau local).
+Par défaut le serveur écoute sur `0.0.0.0:8765` (réseau local — nécessaire pour la détection
+auto et le partage USB). `install-autostart` ajoute les règles pare-feu 8765/TCP + 8766/UDP ;
+si besoin, limite le port 8765 à ton réseau local dans le pare-feu Windows. Pour un mode strict
+loopback (adb reverse uniquement) : `--host 127.0.0.1`.
 
 ## 2. Relier le téléphone au PC — c'est automatique
 
-Lance le serveur avec `--host 0.0.0.0` (ou `start-server.bat`), puis :
+Le serveur tourne (démarrage auto via `install-autostart`, ou `start-server.bat`), puis :
 
 - **Câble USB + partage de connexion** activé sur le téléphone, **ou**
 - téléphone sur le **même Wi-Fi** que le PC,
